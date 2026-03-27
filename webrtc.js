@@ -171,11 +171,20 @@ class WebRTCManager {
         call.on('stream', (stream) => {
             console.log('Stream received attached to video player');
             const video = document.getElementById('remote-video');
-            video.srcObject = stream;
+            
+            // CRITICAL FIX: Unhide the video element BEFORE attaching the stream. 
+            // Chromium suspends WebRTC decoding if assigned while display: none.
             video.classList.remove('hidden');
             document.getElementById('play-btn').classList.remove('hidden');
             document.getElementById('no-video-msg').classList.add('hidden');
             document.getElementById('overlay-msg').classList.add('hidden');
+            
+            video.srcObject = stream;
+            
+            // Explicitly force play once metadata is loaded
+            video.onloadedmetadata = () => {
+                video.play().catch(e => console.error("Play error:", e));
+            };
             
             // Track Viewer WebRTC Stats
             StatsManager.startTracking(call.peerConnection);
