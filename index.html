@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RTN SECURE REMOTE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <!-- Ionicons for modern icons -->
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+    <header>
+        <h1>RTN<span style="color:var(--text); font-weight:400;">SECURE</span></h1>
+        <div style="display:flex; gap:15px; align-items:center;">
+            <div id="connection-status" style="display:flex; align-items:center; font-size:0.9rem;">
+                <span class="status-dot"></span> <span id="status-text">Disconnected</span>
+            </div>
+            <button class="theme-toggle" onclick="toggleTheme()"><ion-icon name="moon"></ion-icon></button>
+        </div>
+    </header>
+
+    <div id="dashboard">
+        <!-- LEFT PANEL: Connection Management -->
+        <div class="column left-panel">
+            <!-- Host Card -->
+            <div class="card glass" id="host-card">
+                <h2>Host Session <span>This Device</span></h2>
+                <div class="input-group">
+                    <input type="text" id="host-id" readonly placeholder="Generating ID...">
+                    <button class="icon-btn" onclick="copyValue('host-id')" title="Copy ID"><ion-icon name="copy-outline"></ion-icon></button>
+                </div>
+                <div class="input-group">
+                    <input type="password" id="host-pass" readonly placeholder="Generating Password...">
+                    <button class="icon-btn" onclick="togglePasswordVisibility('host-pass')" title="Show Password"><ion-icon name="eye-outline"></ion-icon></button>
+                    <button class="icon-btn" onclick="generateNewPassword()" title="Regenerate"><ion-icon name="refresh-outline"></ion-icon></button>
+                    <button class="icon-btn" onclick="copyValue('host-pass')" title="Copy Password"><ion-icon name="copy-outline"></ion-icon></button>
+                </div>
+                
+                <div style="display:flex; gap:10px;">
+                    <button id="btn-host-start" style="flex:1;" onclick="startHosting()"><ion-icon name="videocam"></ion-icon> Start Hosting</button>
+                    <button id="btn-host-stop" style="flex:1;" class="secondary hidden" onclick="stopHosting()"><ion-icon name="stop-circle"></ion-icon> Stop</button>
+                </div>
+                <button id="btn-blur" class="secondary hidden" onclick="toggleBlur()" style="margin-top:5px;"><ion-icon name="eye-off-outline"></ion-icon> Blur Screen</button>
+
+                <video id="local-preview" class="host-preview" autoplay playsinline muted></video>
+            </div>
+
+            <!-- Viewer Card -->
+            <div class="card glass" id="viewer-card">
+                <h2>Join Remote Session</h2>
+                <input type="text" id="target-id" placeholder="Remote ID">
+                <input type="password" id="target-pass" placeholder="Password">
+                <button onclick="startViewing()"><ion-icon name="enter-outline"></ion-icon> Connect to Remote</button>
+            </div>
+            
+            <!-- Connected Users -->
+            <div class="card glass list-box" id="clients-card">
+                <h2>Connected (<span id="client-count">0</span>)</h2>
+                <div id="sub-clients-list" style="display:flex; flex-direction:column; gap:8px;">
+                    <div style="text-align:center; padding: 20px; color:var(--text-muted); font-size:0.9rem;">No active connections</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN PANEL: Viewport & Video -->
+        <div class="column main-panel glass">
+            <div id="video-wrapper">
+                <div class="video-overlay hidden" id="overlay-msg">Connecting...</div>
+                <div class="stats-overlay hidden" id="stats-overlay">
+                    <div id="stat-ping">Ping: -- ms</div>
+                    <div id="stat-fps">FPS: --</div>
+                    <div id="stat-loss">Loss: --%</div>
+                    <div id="stat-kbps">Rate: -- kbps</div>
+                </div>
+                <video id="remote-video" autoplay playsinline muted class="hidden"></video>
+                <button id="play-btn" class="hidden" style="position:absolute; z-index:100; font-size:1.2rem; padding:15px 30px; border-radius:50px;" onclick="forcePlayRemote()"><ion-icon name="play-circle"></ion-icon> Tap to Play Video</button>
+                
+                <div id="no-video-msg" style="color:var(--text-muted); display:flex; flex-direction:column; align-items:center; gap:15px;">
+                    <ion-icon name="tv-outline" style="font-size: 4rem; opacity:0.3;"></ion-icon>
+                    Waiting for a stream...
+                </div>
+            </div>
+            
+            <!-- Control bar for Viewer -->
+            <div id="viewer-controls" class="hidden" style="display:flex; gap:10px; padding: 15px; border-top: 1px solid var(--panel-border); align-items:center;">
+                <button onclick="toggleFullscreen()"><ion-icon name="scan-outline"></ion-icon> Fullscreen</button>
+                <button id="btn-control" class="secondary" onclick="toggleRemoteControl()"><ion-icon name="game-controller-outline"></ion-icon> Take Control</button>
+                <button id="btn-record" class="secondary" onclick="toggleRecording()"><ion-icon name="recording-outline"></ion-icon> Record Session</button>
+                <button id="btn-disconnect" class="secondary" style="margin-left:auto; color:var(--danger);" onclick="disconnectViewer()"><ion-icon name="power-outline"></ion-icon> Disconnect</button>
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL: Chat & File Transfer -->
+        <div class="column right-panel">
+            <div class="card glass" id="chat-card" style="flex:1;">
+                <h2>Chat <span>Real-time</span></h2>
+                <div id="chat-messages">
+                    <div style="text-align:center; padding: 10px; color:var(--text-muted); font-size:0.8rem;">Chat is offline</div>
+                </div>
+                <div class="input-group">
+                    <input type="text" id="chat-input" placeholder="Type a message..." disabled onkeypress="handleChatKey(event)">
+                    <button id="btn-send-chat" class="icon-btn" disabled onclick="sendChat()"><ion-icon name="send"></ion-icon></button>
+                </div>
+            </div>
+
+            <div class="card glass" id="file-card">
+                <h2>File Transfer</h2>
+                <div class="dropzone" id="file-dropzone">
+                    <ion-icon name="cloud-upload-outline" style="font-size:2rem;"></ion-icon>
+                    <span>Drag & Drop File Here</span>
+                    <input type="file" id="file-input" class="hidden" onchange="handleFileSelect(event)">
+                    <button class="secondary" style="font-size:0.8rem; padding: 6px 12px;" onclick="document.getElementById('file-input').click()">Browse</button>
+                </div>
+                <div class="progress-container" id="file-progress-container">
+                    <div class="progress-bar" id="file-progress-bar"></div>
+                </div>
+                <div id="file-status" style="font-size:0.8rem; text-align:center; color:var(--text-muted); margin-top:5px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Core Libs -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    
+    <!-- Specific App Modules -->
+    <script src="js/ui.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/webrtc.js"></script>
+    <script src="js/data-channel.js"></script>
+    <script src="js/media.js"></script>
+    <script src="js/stats.js"></script>
+    <script src="js/input-capture.js"></script>
+    <script src="js/input-execute.js"></script>
+    <script src="js/main-init.js"></script> <!-- Ties it all together -->
+
+</body>
+</html>
