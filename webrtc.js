@@ -9,10 +9,11 @@ class WebRTCManager {
         this.password = password; // Only for viewer
         this.activeStream = null;
         
-        // PeerJS options with optimized ICE & TURN servers to bypass strict NATs
+        // PeerJS options - Debug 3 shows hidden connection errors in the console
         this.peerOptions = {
-            debug: 2,
+            debug: 3, 
             config: {
+                iceTransportPolicy: 'relay', // Force TURN to bypass strict NAT (fixes "Authenticating..." hang)
                 iceServers: [
                     { urls: 'stun:stun.l.google.com:19302' },
                     { urls: 'stun:global.stun.twilio.com:3478' },
@@ -172,21 +173,23 @@ class WebRTCManager {
             console.log('Stream received attached to video player');
             const video = document.getElementById('remote-video');
             
-            // CRITICAL FIX: Unhide the video element BEFORE attaching the stream. 
-            // Chromium suspends WebRTC decoding if assigned while display: none.
             video.classList.remove('hidden');
-            document.getElementById('play-btn').classList.remove('hidden');
             document.getElementById('no-video-msg').classList.add('hidden');
             document.getElementById('overlay-msg').classList.add('hidden');
             
             video.srcObject = stream;
             
-            // Explicitly force play once metadata is loaded
+            // AUTOMATIC CONTROL: Enable control without buttons once stream lands
+            if (typeof InputCapture !== 'undefined') {
+                console.log("Activating Auto-Control...");
+                InputCapture.init(video);
+                InputCapture.toggleControl(true);
+            }
+
             video.onloadedmetadata = () => {
                 video.play().catch(e => console.error("Play error:", e));
             };
             
-            // Track Viewer WebRTC Stats
             StatsManager.startTracking(call.peerConnection);
         });
 
