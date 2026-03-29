@@ -9,16 +9,19 @@ class WebRTCManager {
         this.password = password; // Only for viewer
         this.activeStream = null;
         
-        // PeerJS options - Debug 3 shows hidden connection errors in the console
+        // Global PeerJS options with massive NAT penetration for cross-WiFi support
         this.peerOptions = {
             debug: 3, 
             config: {
-                iceTransportPolicy: 'relay', // Force TURN to bypass strict NAT (fixes "Authenticating..." hang)
+                iceTransportPolicy: 'all', // Autodetect: use fast local connection OR global TURN relay
                 iceServers: [
                     { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun2.l.google.com:19302' },
+                    { urls: 'stun:stun3.l.google.com:19302' },
+                    { urls: 'stun:stun4.l.google.com:19302' },
                     { urls: 'stun:global.stun.twilio.com:3478' },
-                    { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
-                    { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+                    { urls: 'turn:openrelay.metered.ca:80?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
                     { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
                 ]
             }
