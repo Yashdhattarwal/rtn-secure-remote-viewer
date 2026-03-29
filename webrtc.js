@@ -180,10 +180,12 @@ class WebRTCManager {
             video.srcObject = stream;
             
             // AUTOMATIC CONTROL: Enable control without buttons once stream lands
-            if (typeof InputCapture !== 'undefined') {
+            if (window.InputCapture) {
                 console.log("Activating Auto-Control...");
-                InputCapture.init(video);
-                InputCapture.toggleControl(true);
+                window.InputCapture.init(video);
+                window.InputCapture.toggleControl(true);
+            } else {
+                console.warn("InputCapture not found on window! Check if js/input-capture.js is loaded.");
             }
 
             video.onloadedmetadata = () => {
