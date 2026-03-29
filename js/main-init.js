@@ -6,6 +6,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Check if running in electron (for styling or future desktop logic)
     const isElectron = window && window.process && window.process.type;
     console.log("App Starting. Electron Context:", !!isElectron);
+    if (!isElectron) {
+        console.log("💡 Tip: To enable Remote Control (Mouse), the Host must be the Desktop App (npx electron .)");
+    }
 
     // Initialize UI fields
     document.getElementById('host-id').value = AuthManager.getHostId();

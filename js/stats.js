@@ -17,7 +17,7 @@ class StatsManager {
         this.stopTracking();
 
         this.intervalId = setInterval(async () => {
-            if (peerConnection.signalingState === "closed") {
+            if (!peerConnection || typeof peerConnection.getStats !== 'function' || peerConnection.signalingState === "closed") {
                 this.stopTracking();
                 return;
             }

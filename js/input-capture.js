@@ -49,6 +49,7 @@ class InputCapture {
 
     static sendInput(cmd, data) {
         if (!this.isControlling || !DataChannelManager) return;
+        console.log("InputCapture: Sending", cmd, data);
         DataChannelManager.broadcastOrSend({
             type: 'input_event',
             cmd: cmd,
@@ -93,3 +94,6 @@ class InputCapture {
         this.sendInput('keyTap', { key: e.key, code: e.code });
     }
 }
+
+// Ensure global access for webrtc.js
+window.InputCapture = InputCapture;

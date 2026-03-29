@@ -13,7 +13,7 @@ class MediaManager {
             // High framerate capture
             this.localStream = await navigator.mediaDevices.getDisplayMedia({
                 video: { frameRate: { ideal: 60 } },
-                audio: true // Assuming system audio is desired
+                audio: false 
             });
 
             // Display locally

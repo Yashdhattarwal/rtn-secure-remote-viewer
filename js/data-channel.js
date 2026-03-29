@@ -24,9 +24,12 @@ class DataChannelManager {
                 alert('Connection Rejected: ' + data.msg);
                 updateStatus('error', 'Auth Failed');
             } else if (data.type === 'input_event' && isHost) {
+                console.log("Host received input event:", data);
                 // Route to InputExecute on Host Side
-                if (typeof InputExecute !== 'undefined') {
-                    InputExecute.handleRemoteEvent(data, id);
+                if (window.InputExecute) {
+                    window.InputExecute.handleRemoteEvent(data, id);
+                } else {
+                    console.warn("InputExecute not found on window! Check if js/input-execute.js is loaded.");
                 }
             }
         });

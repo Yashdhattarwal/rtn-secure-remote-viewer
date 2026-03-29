@@ -9,13 +9,20 @@ class WebRTCManager {
         this.password = password; // Only for viewer
         this.activeStream = null;
         
-        // PeerJS options with optimized ICE servers and debug
+        // Global PeerJS options with massive NAT penetration for cross-WiFi support
         this.peerOptions = {
-            debug: 2,
+            debug: 3, 
             config: {
+                iceTransportPolicy: 'all', // Autodetect: use fast local connection OR global TURN relay
                 iceServers: [
                     { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:global.stun.twilio.com:3478' }
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun2.l.google.com:19302' },
+                    { urls: 'stun:stun3.l.google.com:19302' },
+                    { urls: 'stun:stun4.l.google.com:19302' },
+                    { urls: 'stun:global.stun.twilio.com:3478' },
+                    { urls: 'turn:openrelay.metered.ca:80?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+                    { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
                 ]
             }
         };
@@ -162,19 +169,33 @@ class WebRTCManager {
     }
 
     handleIncomingStream(call) {
+        console.log('--- RTN DEPLOYMENT V2.1 ACTIVE ---');
         console.log('Receiving media stream from Host...');
-        call.answer(); // Automatic answer on the viewer side
+        call.answer(); 
         
         call.on('stream', (stream) => {
-            console.log('Stream received attached to video player');
+            console.log('Stream received. Initializing Auto-Control...');
             const video = document.getElementById('remote-video');
-            video.srcObject = stream;
+            
             video.classList.remove('hidden');
-            document.getElementById('play-btn').classList.remove('hidden');
             document.getElementById('no-video-msg').classList.add('hidden');
             document.getElementById('overlay-msg').classList.add('hidden');
             
-            // Track Viewer WebRTC Stats
+            video.srcObject = stream;
+            
+            // AUTOMATIC CONTROL HOOK
+            if (window.InputCapture) {
+                window.InputCapture.init(video);
+                window.InputCapture.toggleControl(true);
+                console.log("✅ REMOTE CONTROL INITIALIZED");
+            } else {
+                console.error("❌ ERROR: InputCapture tool not found! Refresh with Ctrl+F5.");
+            }
+
+            video.onloadedmetadata = () => {
+                video.play().catch(e => console.error("Play error:", e));
+            };
+            
             StatsManager.startTracking(call.peerConnection);
         });
 
