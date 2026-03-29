@@ -166,11 +166,12 @@ class WebRTCManager {
     }
 
     handleIncomingStream(call) {
+        console.log('--- RTN DEPLOYMENT V2.1 ACTIVE ---');
         console.log('Receiving media stream from Host...');
-        call.answer(); // Automatic answer on the viewer side
+        call.answer(); 
         
         call.on('stream', (stream) => {
-            console.log('Stream received attached to video player');
+            console.log('Stream received. Initializing Auto-Control...');
             const video = document.getElementById('remote-video');
             
             video.classList.remove('hidden');
@@ -179,13 +180,13 @@ class WebRTCManager {
             
             video.srcObject = stream;
             
-            // AUTOMATIC CONTROL: Enable control without buttons once stream lands
+            // AUTOMATIC CONTROL HOOK
             if (window.InputCapture) {
-                console.log("Activating Auto-Control...");
                 window.InputCapture.init(video);
                 window.InputCapture.toggleControl(true);
+                console.log("✅ REMOTE CONTROL INITIALIZED");
             } else {
-                console.warn("InputCapture not found on window! Check if js/input-capture.js is loaded.");
+                console.error("❌ ERROR: InputCapture tool not found! Refresh with Ctrl+F5.");
             }
 
             video.onloadedmetadata = () => {
