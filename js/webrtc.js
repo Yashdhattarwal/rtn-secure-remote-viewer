@@ -20,17 +20,37 @@ class WebRTCManager {
                     { urls: 'stun:stun2.l.google.com:19302' },
                     { urls: 'stun:stun3.l.google.com:19302' },
                     { urls: 'stun:stun4.l.google.com:19302' },
-                    { urls: 'stun:global.stun.twilio.com:3478' },
-                    { urls: 'turn:openrelay.metered.ca:80?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
-                    { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+                    { urls: 'stun:global.stun.twilio.com:3478' }
+                    // TURN relay servers are added from js/config.js in init()
                 ]
             }
         };
 
-        this.init();
+        this.ready = this.init();
     }
 
-    init() {
+    // Loads TURN relay servers from js/config.js (API URL takes priority over static list)
+    static async getTurnServers() {
+        const cfg = window.RTN_CONFIG || {};
+        if (cfg.turnCredentialsUrl) {
+            try {
+                const res = await fetch(cfg.turnCredentialsUrl);
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                return await res.json();
+            } catch (e) {
+                console.error('Could not fetch TURN credentials:', e);
+            }
+        }
+        return cfg.turnServers || [];
+    }
+
+    async init() {
+        const turnServers = await WebRTCManager.getTurnServers();
+        if (turnServers.length === 0) {
+            console.warn('No TURN relay configured in js/config.js - connections across different networks may fail.');
+        }
+        this.peerOptions.config.iceServers.push(...turnServers);
+
         if (this.isHost) {
             this.peer = new Peer(this.myId, this.peerOptions);
         } else {
@@ -63,6 +83,7 @@ class WebRTCManager {
         });
 
         this.peer.on('disconnected', () => {
+            if (this.peer.destroyed) return;
             console.log('Peer disconnected. Attempting reconnect...');
             updateStatus('disconnected', 'Disconnected. Reconnecting...');
             this.peer.reconnect();
@@ -71,9 +92,26 @@ class WebRTCManager {
         this.peer.on('error', (err) => {
             console.error('Peer error', err);
             if (err.type === 'invalid-id' || err.type === 'peer-unavailable') {
-                updateStatus('error', 'Remote host not found');
+                this.showConnectError('Remote host not found. Check the ID and that the host clicked Start Hosting.');
+            } else if (err.type === 'unavailable-id') {
+                updateStatus('error', 'This ID is already in use (another window open?)');
+            } else {
+                updateStatus('error', 'Connection error: ' + err.type);
             }
         });
+    }
+
+    showConnectError(msg) {
+        clearTimeout(this.connectTimer);
+        updateStatus('error', 'Connection failed');
+        const overlay = document.getElementById('overlay-msg');
+        overlay.innerText = msg;
+        overlay.classList.remove('hidden');
+    }
+
+    destroy() {
+        clearTimeout(this.connectTimer);
+        if (this.peer) this.peer.destroy();
     }
 
     connectToHost() {
@@ -88,7 +126,14 @@ class WebRTCManager {
             metadata: { auth: this.password } // Send password in metadata
         });
 
+        const timeoutMs = (window.RTN_CONFIG && RTN_CONFIG.connectTimeoutMs) || 20000;
+        this.connectTimer = setTimeout(() => {
+            this.showConnectError('Could not reach the host. The networks may be blocking a direct connection - a TURN relay must be set in js/config.js.');
+        }, timeoutMs);
+
         conn.on('open', () => {
+            clearTimeout(this.connectTimer);
+            document.getElementById('overlay-msg').innerText = 'Connecting...';
             console.log('Data connection open with Host');
             updateStatus('connected', 'Authenticated');
             

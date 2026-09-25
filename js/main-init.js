@@ -37,7 +37,7 @@ async function startHosting() {
 function stopHosting() {
     if (appManager) {
         appManager.stopBroadcast();
-        appManager.peer.destroy();
+        appManager.destroy();
         appManager = null;
     }
     
@@ -68,6 +68,7 @@ function startViewing() {
 
     // Hide host card, expand viewer viewport
     document.getElementById('host-card').classList.add('hidden');
+    document.getElementById('overlay-msg').innerText = 'Connecting...';
     document.getElementById('overlay-msg').classList.remove('hidden');
     document.getElementById('viewer-controls').classList.remove('hidden');
 
@@ -76,10 +77,11 @@ function startViewing() {
 
 function disconnectViewer() {
     if (appManager) {
-        appManager.peer.destroy();
+        appManager.destroy();
         appManager = null;
     }
-    
+
+    document.getElementById('overlay-msg').classList.add('hidden');
     document.getElementById('remote-video').classList.add('hidden');
     document.getElementById('remote-video').srcObject = null;
     document.getElementById('no-video-msg').classList.remove('hidden');

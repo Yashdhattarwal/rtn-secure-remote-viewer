@@ -1,0 +1,36 @@
+{
+  "name": "rtn-secure-remote",
+  "productName": "RTN Secure Remote",
+  "version": "1.0.0",
+  "description": "RTN Secure Remote - host app for remote screen sharing and control",
+  "main": "main.js",
+  "author": "Yashdhattarwal",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win"
+  },
+  "dependencies": {
+    "@nut-tree-fork/nut-js": "^4.2.6"
+  },
+  "devDependencies": {
+    "electron": "^44.4.5",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.rtn.secureremote",
+    "productName": "RTN Secure Remote",
+    "files": [
+      "main.js",
+      "index.html",
+      "js/**/*",
+      "css/**/*",
+      "package.json"
+    ],
+    "directories": { "output": "dist" },
+    "win": { "target": ["portable", "nsis"] },
+    "portable": { "artifactName": "RTN_Secure_Remote_Portable_${version}.exe" },
+    "nsis": { "artifactName": "RTN_Secure_Remote_Setup_${version}.exe", "oneClick": false, "allowToChangeInstallationDirectory": true }
+  }
+}
