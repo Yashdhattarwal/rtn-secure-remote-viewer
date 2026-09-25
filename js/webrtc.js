@@ -162,7 +162,10 @@ class WebRTCManager {
             // Send JWT Token payload indicating success
             const token = AuthManager.generateToken(conn.peer);
             conn.on('open', () => {
-                conn.send({ type: 'sys_auth_success', token: token });
+                // canControl tells the viewer whether this host can execute mouse/keyboard input
+                // (only the Electron desktop app can; the website cannot)
+                const canControl = !!(window.InputExecute && InputExecute.ipc);
+                conn.send({ type: 'sys_auth_success', token: token, canControl: canControl });
                 
                 // If we are currently sharing a screen, immediately call them
                 if (this.activeStream) {

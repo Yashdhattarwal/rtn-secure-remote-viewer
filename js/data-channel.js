@@ -20,6 +20,10 @@ class DataChannelManager {
                 this.handleFileStart(data, id);
             } else if (data.type === 'file_chunk') {
                 this.handleFileChunk(data, id);
+            } else if (data.type === 'sys_auth_success' && !isHost) {
+                if (data.canControl === false) {
+                    updateStatus('connected', 'View only - host must use the desktop app to allow control');
+                }
             } else if (data.type === 'sys_auth_fail') {
                 alert('Connection Rejected: ' + data.msg);
                 updateStatus('error', 'Auth Failed');
